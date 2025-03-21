@@ -1,0 +1,18 @@
+temp.md
+
+# Ignore private files with sensitive information
+private-network-details.md
+*-private.md
+*-secret.md
+*.private
+*.secret
+
+# Logs and temporary files
+*.log
+*.tmp
+.DS_Store
+
+# Ignore misc files that might contain sensitive data
+credentials.txt
+auth.json
+config.local.json
