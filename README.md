@@ -1,7 +1,10 @@
-# Cisco Switch Identification and Access Log
+# Rack Switch Identification and Access Log (Quanta & Cisco)
 
 ## Overview
-This document summarizes all observed details, actions, and findings related to the investigation of Cisco switches available in the lab/server room. We have identified two Cisco N5K-C56128P switches labeled "Telin 1" and "Telin 2", as well as a third Cisco switch positioned at the top of the rack.
+This document summarizes all observed details, actions, and findings related to the investigation of switches available in the lab/server room.
+We have identified:
+1.  A **Quanta LB6M switch (running FASTPATH OS)** positioned at the top of the rack. Console access to this switch has been established (details below). Specific identification details are in `private-network-details.md`.
+2.  Two **Cisco Nexus 5600 Series (N5K-C56128P)** switches labeled "Telin 1" and "Telin 2", located below the Quanta switch. These are pending investigation. Specific identification details (if found) should be stored in `private-network-details.md`.
 
 ## Switch Images
 
@@ -13,20 +16,28 @@ This document summarizes all observed details, actions, and findings related to 
 
 ## Hardware Details
 
-### Switch Identification:
-- **Nexus Switches**:
-  - **Model**: Cisco Nexus 5600 Series (N5K-C56128P)
-  - **Quantity**: 2 units
-  - **Labels**: "Telin 1" and "Telin 2"
+### Top Switch (Accessed via Console)
+- **Vendor**: Quanta Computer Inc.
+- **Model**: LB6M
+- **Operating System**: FASTPATH (Version details in `private-network-details.md`)
+- **Chipset**: Broadcom BCM56820_B0
+- **Serial Number**: `<serial-number>` (See `private-network-details.md`)
+- **Base MAC Address**: `<mac-address>` (See `private-network-details.md`)
+- **Position**: Mounted at the top of the rack above the two Nexus switches.
+- **Current Status**: Active with multiple lit SFP ports observed.
+- **Connections**: Mixture of fiber and copper connections via SFP modules observed.
+- **Console Port**: RJ45 port used with standard "rollover" cable (9600 8N1).
+- **Management Port**: Likely a separate RJ45 Ethernet port exists. An IP address (`<ip-address>/<subnet-mask>`) is configured on interface `0/24`, however this port was observed to be **DOWN**. Default gateway also configured (`<gateway-ip>`). (See `private-network-details.md` for IPs).
 
-- **Additional Top Switch**:
-  - **Vendor**: Cisco
-  - **Possible Models**: Could be a Nexus 9000 series or possibly a Catalyst model (exact identification pending)
-  - **Current Status**: Active with multiple lit SFP ports
-  - **Connections**: Mixture of fiber and copper connections via SFP modules
-  - **Position**: Mounted at the top of the rack above the two Nexus switches
+### Nexus Switches ("Telin 1" & "Telin 2")
+- **Vendor**: Cisco
+- **Model**: Nexus 5600 Series (N5K-C56128P)
+- **Quantity**: 2 units
+- **Labels**: "Telin 1" and "Telin 2"
+- **Position**: Below the top Quanta switch.
+- **Current Status**: Assumed active, pending investigation.
 
-### Technical Specifications (Nexus 5600 Series):
+#### Technical Specifications (Nexus 5600 Series):
 - **Form Factor**: 1RU (1.75 inches) rack mount
 - **Switching Capacity**: Up to 1.28 Tbps
 - **Forwarding Rate**: Up to 947 Mpps
@@ -34,122 +45,150 @@ This document summarizes all observed details, actions, and findings related to 
   - 48 fixed 10-Gigabit SFP+ ports
   - 4 fixed 40-Gigabit QSFP+ ports (or 16 10-Gigabit ports through breakout cables)
   - Management ports: 1 RJ-45 port, 1 RS-232 console port, 1 USB port
-
-### Key Features:
-- Layer 2 and 3 switching capabilities
-- Low-latency cut-through architecture
-- Virtual Port Channel (vPC) technology
-- Fibre Channel over Ethernet (FCoE) support
-- Advanced quality of service (QoS)
-- Comprehensive security features
-
-### Physical Features:
-- **Console Port**:
-  -  **Light-blue cable was used through RJ45 port** (Cisco standard)
-  - Used for low-level CLI access for configuration and diagnostics
-- **Management Port**: RJ-45 Ethernet port
+- **Key Features**: Layer 2/3, vPC, FCoE, QoS, NX-OS operating system.
+- **Console Port**: Standard Cisco RJ45 console port (usually 9600 8N1).
+- **Management Port**: Dedicated RJ45 Ethernet port (`mgmt0`).
 
 ---
 
 ## Connection Attempts and Findings
 
-### 1. Management Port Connection
-- **Equipment Used**: 
+### 1. Management Port Connection (Attempt via Ethernet Adapter)
+- **Equipment Used**:
   - Exibel USB-C to Gigabit Ethernet adapter (AX88179A chipset)
   - Standard Ethernet cable
 - **Connection Status**:
-  - Successfully connected to management network
-  - Received IP address: <internal-mgmt-ip>
+  - Successfully connected to *a* management network segment.
+  - Received DHCP Address: `<dhcp-ip-address>/<subnet-mask>` (Network details in `private-network-details.md`)
   - Connection active at 1000baseT full-duplex
 - **Test Results**:
-  - Unable to ping potential switch management IPs (potential gateway and device addresses)
-  - No response to SSH connection attempts
-  - ARP table showed no devices on the management subnet
-- **Conclusion**: 
-  - Physical connectivity established
-  - Management network detected but no successful device communication
-
-### 2. Console Connection 
-- **Equipment Used**:
-  - Cisco console cable (light-blue RJ45)
-  - GenesysLogic USB3.1 Hub adapter
-- **Connection Status**:
-  - Device detected as /dev/tty.usbserial-2110
-  - Connection established using `screen /dev/tty.usbserial-2110 9600`
-- **Observed Behavior**:
-  - Terminal displayed random symbols when moving trackpad/mouse
-  - Characters appeared in response to terminal interaction
-  - Standard terminal behaviors (history, arrow keys) were non-functional
-  - Screen session did not save terminal history
-- **Challenges**:
-  - Difficulty interpreting console output
-  - Terminal emulation issues (screen showing "Sorry, could not find a PTY" in some attempts)
-    - **Cause**: Previous screen sessions not properly terminated, creating resource contention
-    - **Solution**: Kill existing screen processes with `sudo lsof | grep tty.usbserial` and `sudo kill <PID>`
-  - Resource busy errors when attempting multiple connections
+  - Unable to ping potential switch management IPs (target IPs may have been incorrect).
+  - No response to SSH connection attempts.
+  - ARP table showed no devices on this management subnet.
 - **Conclusion**:
-  - Console port physical connection succeeded
-  - Basic communication with switch was established
-  - Further practice with console interaction needed for effective management
+  - Physical connectivity established to a `<network-range>` network.
+  - **Relevance Unclear**: It is currently unknown if this network relates to the Quanta switch (which uses a different IP range) or the Cisco Nexus switches. Further investigation needed. (See `private-network-details.md` for network details).
 
-### 3. Console Connection Tips for Future Sessions
-For the next console connection attempt:
+### 2. Console Connection (Successful - Top Quanta LB6M Switch)
+- **Equipment Used**:
+  - Cisco console cable (light-blue RJ45) connected between server's DB9 serial port (`/dev/ttyS0`) and the Quanta switch's RJ45 console port.
+  - Terminal Emulator: `minicom` on Linux server (`<server-hostname>`, see `private-network-details.md`).
+- **Connection Status**:
+  - Device: `/dev/ttyS0` on the Linux server.
+  - Settings: 9600 baud, 8 data bits, no parity, 1 stop bit (8N1).
+  - Command: `sudo minicom -D /dev/ttyS0 -b 9600`.
+  - Successfully connected, bypassed FASTPATH boot menu, logged in as `<admin-username>` (see `private-network-details.md`), and used `enable` (requires password) to reach privileged mode (`#`).
+- **Observed Behavior**:
+  - OS identified as FASTPATH (Version details in `private-network-details.md`) on a Quanta LB6M.
+  - Standard CLI interaction using `?` for help and `Tab` for completion.
+  - **LLDP is currently DISABLED** on all interfaces by default configuration.
+  - Ports `0/16`, `0/22`, `0/23` were observed to be **UP** (link active). Other ports 0/1-0/28 were DOWN. Port `0/24` (with configured IP) was DOWN.
+  - MAC addresses learned on active ports (Details in `private-network-details.md`). ARP table was empty. No Port Channels active.
+- **Challenges**:
+  - Initial session required navigating the FASTPATH Startup Menu (selected option 1).
+  - Cisco commands are invalid; FASTPATH commands must be used.
+- **Conclusion**:
+  - Successful console access established to the **top Quanta LB6M switch**.
+  - Basic device information, configuration snippets, and current port/protocol status obtained.
 
-- **Proper Screen Usage**:
-  - After starting `screen /dev/tty.usbserial-2110 9600`:
-    - Press Enter 2-3 times to get a clean prompt
-    - Type commands carefully (no arrow keys or history)
-    - If you see a prompt like `Switch>` or `hostname#`, you're successfully connected
-  - To exit screen properly: Press Ctrl+A followed by Ctrl+\ (then 'y' to confirm)
+### 3. Console Connection Tips for Future Sessions (FASTPATH on Quanta)
+For the next console connection attempt to the **Quanta switch**:
+
+- **Proper Screen/Minicom Usage**:
+  - Start with `screen /dev/ttyS0 9600` or `sudo minicom -D /dev/ttyS0 -b 9600`.
+  - Press Enter 2-3 times to get a prompt (`(FASTPATH Routing) >` or `#`).
+  - Use `?` frequently to find commands. Use `Tab` for command completion.
+  - To exit screen properly: Press `Ctrl+A`, `Ctrl+\`, then 'y'.
+  - To exit minicom: Press `Ctrl+A`, then `X`.
 
 - **Troubleshooting Tips**:
-  - If garbage characters appear, try "resetting" the terminal with `Ctrl+A` then `k`
-  - If no response, ensure console cable is fully seated
-  - Try a different baud rate if standard 9600 doesn't work (115200 is common alternative)
+  - If garbage characters appear, verify terminal settings (9600 8N1).
+  - If no response, check cable seating and `/dev/ttyS0` permissions (`dialout` group).
 
 - **Logging Console Output**:
-  - Use the `script` command before starting screen:
+  - Use the `script` command before starting screen/minicom:
+    ```bash
+    script quanta_console_output_$(date +%F).txt
+    screen /dev/ttyS0 9600 # or minicom
     ```
-    script console_output.txt
-    screen /dev/tty.usbserial-2110 9600
-    ```
-    (After disconnecting, type `exit` to save the log)
-  - Consider using a dedicated serial terminal application like Serial (from Mac App Store)
+    (Type `exit` in the shell after finishing to save the log)
+  - Minicom logging: `Ctrl+A`, `L`.
 
-### 4. Useful Cisco Switch Commands
-For future reference, these commands will be valuable once console access is established:
+### 4. Useful Quanta FASTPATH Switch Commands (Top Switch)
+These commands are relevant for the **Quanta LB6M** switch:
 
-#### Basic Information
-- `show version` - Display switch model, OS version, uptime
-- `show running-config` - View current configuration
-- `show interfaces status` - View all interface statuses
-- `show ip interface brief` - Show IP addresses on interfaces
-- `show cdp neighbors` - Display connected Cisco devices
+#### Basic Information & Status
+- `show version` - Hardware/software versions, MAC, Serial.
+- `show sysinfo` - System name, location, uptime.
+- `show running-config` - Current active configuration.
+- `show lldp interface all` - **Shows Link Status (Up/Down)** and LLDP Tx/Rx status per interface (Note: `show interfaces status` is *not* valid).
+- `show interface ethernet <slot/port>` - Shows detailed statistics/counters for a specific physical interface (e.g., `show interface ethernet 0/16`).
+- `show interface ethernet switchport` - Shows CPU port statistics.
+- `show ip interface brief` / `show ip interface` - IP interface status (May show little if interface is down or unconfigured).
+- `show arp` - IP-to-MAC address mappings (ARP cache).
+- `show mac-addr-table` - MAC forwarding table (MACs learned per port/VLAN).
+- `show vlan` - VLAN summary.
+- `show lldp remote-device all` - **Shows LLDP neighbors** (Requires LLDP to be enabled first).
+- `show lldp statistics all` - Shows LLDP Tx/Rx counters.
+- `show port-channel brief` / `show port-channel all` - Shows status of Link Aggregation groups (Port Channels).
+- `show environment` - (**Untested**) Hardware status (temp, fans, power).
+- `show logging` / `show eventlog` - (**Untested**) System logs.
+- `show clock` - System time.
+- `show history` - (**Untested**) Command history.
 
-#### Configuration Commands
-- `configure terminal` - Enter configuration mode
-- `interface <type/number>` - Configure a specific interface
-- `copy running-config startup-config` - Save configuration
+#### Configuration Commands (Enter `configure` first)
+- `lldp run` - Enable LLDP globally.
+- `interface <type/number>` (e.g., `interface 0/1`) - Enter interface configuration mode.
+  - `lldp transmit` - Enable LLDP sending on this interface.
+  - `lldp receive` - Enable LLDP receiving on this interface.
+- `hostname <name>` - Set the switch hostname.
+- `exit` - Exit current configuration mode.
+- `write` - Save running-config to startup-config (run in `#` mode after exiting `configure`).
+- `copy <source> <destination>` - File operations.
+
+**(Note:** For the Cisco Nexus switches ("Telin 1", "Telin 2"), standard Cisco NX-OS commands apply.)
 
 ---
 
 ## Next Steps
 
-1. **Console Access Troubleshooting**:
-   - Try different terminal emulation software (Serial, CoolTerm, ZTerm)
-   - Test different baud rates (115200, 57600, 38400)
-   - Check console cable and adapter functionality on another device
-   
-2. **Alternative Management Access**:
-   - Try connection via web interface (https://<mgmt-ip>)
-   - Attempt telnet connection if SSH is disabled
-   - Test different management IP subnets (alternative private networks)
+1.  **Quanta Switch (Top) - Enable LLDP & Gather More Info**:
+    *   Reconnect via console (`/dev/ttyS0`, 9600 baud).
+    *   **Enable LLDP**:
+        ```
+        configure
+        lldp run
+        ! Apply to relevant interfaces (e.g., the UP ones: 0/16, 0/22, 0/23)
+        interface 0/16
+        lldp transmit
+        lldp receive
+        exit
+        interface 0/22
+        lldp transmit
+        lldp receive
+        exit
+        interface 0/23
+        lldp transmit
+        lldp receive
+        exit
+        ! Add other interfaces if needed
+        exit
+        write 
+        ```
+    *   Wait ~60 seconds, then check for neighbors: `show lldp remote-device all`. This should identify connected devices like `basefarm-6`.
+    *   Get detailed stats for UP ports: `show interface ethernet 0/16`, `show interface ethernet 0/22`, `show interface ethernet 0/23`.
+    *   Set a meaningful hostname if not already done (`configure`, `hostname Quanta-Top-SW1`, `exit`, `write`).
+    *   Check logs: `show logging`, `show eventlog`.
+    *   Check environmentals: `show environment`.
+    *   Document findings, especially LLDP neighbor details and interface stats, in `private-network-details.md`.
 
-3. **Physical Reset Option**:
-   - If necessary, consider password recovery procedure
-   - Document factory reset process as last resort
+2.  **Cisco Nexus Switches ("Telin 1" / "Telin 2") - Initial Access**:
+    *   Identify console ports on Telin 1 and Telin 2.
+    *   Attempt console connection using the same server/cable but connect to the Nexus console port (likely also `/dev/ttyS0` if only one serial port is used, requires moving the cable). Use 9600 8N1 settings.
+    *   Attempt management port access (`mgmt0`): Connect laptop/server to the `mgmt0` port, configure an IP on the same subnet (if known), and try SSH/HTTPS. The `<network-range>` network could potentially be for these switches (See `private-network-details.md`).
 
----
+3.  **Network Clarification**:
+    *   Investigate the `<network-range>` network further. Try connecting to it again and scanning for devices (e.g., using `arp-scan` or `nmap` if possible from a connected machine) to see if the Nexus management IPs appear (See `private-network-details.md`).
 
 ## Additional Notes
 - These are high-performance data center switches commonly used for top-of-rack deployment.
@@ -159,13 +198,12 @@ For future reference, these commands will be valuable once console access is est
 
 ---
 
-## Linux Server Connection
+## Linux Server Connection (to Quanta Console)
 
 ### Server Configuration
-- **Hardware Connection**: 
-  - Linux server in the server room connected to Cisco switch console port
-  - Using Cisco console cable (light-blue) with RJ45 connector to switch and DB9 connector to server
-  - The cable is sometimes referred to as a "rollover cable" due to its pin configuration
+- **Hardware Connection**:
+  - Linux server (`<server-hostname>`, see `private-network-details.md`) connected to the **Top Quanta LB6M** switch console port.
+  - Using Cisco console cable (light-blue) with RJ45 connector to switch and DB9 connector to server's serial port (`/dev/ttyS0`).
 
 ### Serial Port Details
 - **Available Serial Ports**:
@@ -175,18 +213,22 @@ For future reference, these commands will be valuable once console access is est
   
 ### Connection Challenges
 - **Access Requirements**:
-  - Serial port access requires membership in the `dialout` group
+  - Serial port access requires membership in the `dialout` group on `<server-hostname>`.
   - Terminal emulation software required (screen or minicom)
   - Proper serial settings: 9600 baud, 8 data bits, no parity, 1 stop bit, no flow control
   
 ### Technical Findings
-- Confirmed connection between server and switch console port
-- Serial ports identified and verified in system logs
-- Standard connection procedure should use:
-  ```
+- Confirmed connection between server (`/dev/ttyS0`) and **Quanta switch console port**.
+- Serial ports identified and verified in system logs.
+- Standard connection procedure for Quanta console (run on `<server-hostname>`):
+  ```bash
+  # Ensure user is in the dialout group
+  # sudo usermod -a -G dialout $USER
+  # Log out and back in if group was just added
   screen /dev/ttyS0 9600
+  # OR
+  sudo minicom -D /dev/ttyS0 -b 9600
   ```
-  (After user is added to dialout group and screen is installed)
 
 ### Security Considerations
 - Console access provides privileged access to switch configuration
@@ -195,12 +237,12 @@ For future reference, these commands will be valuable once console access is est
 
 ### Troubleshooting Details
 - **Network Connectivity Issues**:
-  - Server has limited network connectivity now
+  - Server (`<server-hostname>`) has limited network connectivity now
   - Package installation fails with connection timeouts to archive.ubuntu.com
   - Consider downloading packages on another system and transferring them
 
 - **Permission Resolution**:
-  - Add user to dialout group: `sudo usermod -a -G dialout <username>`
+  - Add user to dialout group: `sudo usermod -a -G dialout <username>` (on `<server-hostname>`)
   - Log out and log back in for group changes to take effect
   - Check group membership with: `groups <username>`
 
@@ -228,21 +270,21 @@ For future reference, these commands will be valuable once console access is est
     stty -raw echo
     ```
 
-### Next Steps
-1. **Configuration Priorities**:
-   - Add <username> user to dialout group
-   - Install screen package (when network is available)
-   - Create a simple script for console access if package installation fails
-   
-2. **Initial Switch Configuration**:
-   - Document hostname and IP configuration
-   - Map out physical port connections
-   - Check CDP neighbors to identify connected devices
-   
-3. **Documentation Tasks**:
-   - Record successful connection method
-   - Document switch passwords (securely)
-   - Save running-config to startup-config after changes
+### Next Steps (Server & Switch Access)
+1.  **Configuration Priorities**:
+    *   Verify `<username>` is in `dialout` group on `<server-hostname>`.
+    *   Ensure `screen` or `minicom` is available/installed on `<server-hostname>`.
+    *   Use `screen` or `minicom` to access the **Quanta** switch console via `/dev/ttyS0`.
+
+2.  **Initial Switch Discovery (Quanta Focus First)**:
+    *   Document Quanta's hostname (set one if missing) and IP configuration.
+    *   Map physical ports on the Quanta switch using `show lldp interface all` (for link status) and `show mac-addr-table`.
+    *   **Enable LLDP** and check neighbors (`show lldp remote-device all`) to confirm connections like `basefarm-6`.
+
+3.  **Documentation Tasks**:
+    *   Record successful Quanta connection method and credentials securely (in `private-network-details.md` or password manager).
+    *   Save Quanta switch configuration using `write` after changes.
+    *   Plan separate documentation for Cisco Nexus switch access/findings.
 
 ## Credits
 Documented by: Almaz @ UiT Narvik, 2025
