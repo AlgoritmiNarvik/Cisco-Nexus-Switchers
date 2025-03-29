@@ -14,6 +14,34 @@ We have identified:
 ### Back View
 ![Back view of Cisco switches](image-back.png)
 
+## Table of Contents
+- [Hardware Details](#hardware-details)
+  - [Top Switch (Accessed via Console)](#top-switch-accessed-via-console)
+  - [Nexus Switches ("Telin 1" & "Telin 2")](#nexus-switches-telin-1--telin-2)
+    - [Technical Specifications (Nexus 5600 Series)](#technical-specifications-nexus-5600-series)
+- [Connection Attempts and Findings](#connection-attempts-and-findings)
+  - [1. Management Port Connection (Attempt via Ethernet Adapter)](#1-management-port-connection-attempt-via-ethernet-adapter)
+  - [2. Console Connection (Successful - Top Quanta LB6M Switch)](#2-console-connection-successful---top-quanta-lb6m-switch)
+  - [3. Console Connection Tips for Future Sessions (FASTPATH on Quanta)](#3-console-connection-tips-for-future-sessions-fastpath-on-quanta)
+  - [4. Useful Quanta FASTPATH Switch Commands (Top Switch)](#4-useful-quanta-fastpath-switch-commands-top-switch)
+- [Glossary of Terms](#glossary-of-terms)
+- [Next Steps](#next-steps)
+  - [Quanta Switch (Top) Investigation](#quanta-switch-top-investigation)
+  - [Cisco Nexus Switches ("Telin 1" / "Telin 2") Investigation](#cisco-nexus-switches-telin-1--telin-2-investigation)
+  - [Network Clarification (Management Network)](#network-clarification-management-network)
+  - [Server (`basefarm-6`) Preparation](#server-basefarm-6-preparation)
+  - [Documentation](#documentation)
+- [Additional Notes](#additional-notes)
+- [Linux Server Connection (to Quanta Console)](#linux-server-connection-to-quanta-console)
+  - [Server Configuration](#server-configuration)
+  - [Serial Port Details](#serial-port-details)
+  - [Connection Challenges](#connection-challenges)
+  - [Technical Findings](#technical-findings)
+  - [Security Considerations](#security-considerations)
+  - [Troubleshooting Details](#troubleshooting-details)
+  - [Alternative Connection Methods](#alternative-connection-methods)
+- [Contact](#Contact)
+
 ## Hardware Details
 
 ### Top Switch (Accessed via Console)
@@ -32,8 +60,8 @@ We have identified:
 ### Nexus Switches ("Telin 1" & "Telin 2")
 - **Vendor**: Cisco
 - **Model**: Nexus 5600 Series (N5K-C56128P)
-- **Quantity**: 2 units
-- **Labels**: "Telin 1" and "Telin 2"
+  - **Quantity**: 2 units
+  - **Labels**: "Telin 1" and "Telin 2"
 - **Position**: Below the top Quanta switch.
 - **Current Status**: Assumed active, pending investigation.
 
@@ -54,7 +82,7 @@ We have identified:
 ## Connection Attempts and Findings
 
 ### 1. Management Port Connection (Attempt via Ethernet Adapter)
-- **Equipment Used**:
+- **Equipment Used**: 
   - Exibel USB-C to Gigabit Ethernet adapter (AX88179A chipset)
   - Standard Ethernet cable
 - **Connection Status**:
@@ -65,7 +93,7 @@ We have identified:
   - Unable to ping potential switch management IPs (target IPs may have been incorrect).
   - No response to SSH connection attempts.
   - ARP table showed no devices on this management subnet.
-- **Conclusion**:
+- **Conclusion**: 
   - Physical connectivity established to a `<network-range>` network.
   - **Relevance Unclear**: It is currently unknown if this network relates to the Quanta switch (which uses a different IP range) or the Cisco Nexus switches. Further investigation needed. (See `private-network-details.md` for network details).
 
@@ -148,60 +176,10 @@ These commands are relevant for the **Quanta LB6M** switch:
 
 **(Note:** For the Cisco Nexus switches ("Telin 1", "Telin 2"), standard Cisco NX-OS commands apply.)
 
----
-
-## Next Steps
-
-1.  **Quanta Switch (Top) - Enable LLDP & Gather More Info**:
-    *   Reconnect via console (`/dev/ttyS0`, 9600 baud).
-    *   **Enable LLDP**:
-        ```
-        configure
-        lldp run
-        ! Apply to relevant interfaces (e.g., the UP ones: 0/16, 0/22, 0/23)
-        interface 0/16
-        lldp transmit
-        lldp receive
-        exit
-        interface 0/22
-        lldp transmit
-        lldp receive
-        exit
-        interface 0/23
-        lldp transmit
-        lldp receive
-        exit
-        ! Add other interfaces if needed
-        exit
-        write 
-        ```
-    *   Wait ~60 seconds, then check for neighbors: `show lldp remote-device all`. This should identify connected devices like `basefarm-6`.
-    *   Get detailed stats for UP ports: `show interface ethernet 0/16`, `show interface ethernet 0/22`, `show interface ethernet 0/23`.
-    *   Set a meaningful hostname if not already done (`configure`, `hostname Quanta-Top-SW1`, `exit`, `write`).
-    *   Check logs: `show logging`, `show eventlog`.
-    *   Check environmentals: `show environment`.
-    *   Document findings, especially LLDP neighbor details and interface stats, in `private-network-details.md`.
-
-2.  **Cisco Nexus Switches ("Telin 1" / "Telin 2") - Initial Access**:
-    *   Identify console ports on Telin 1 and Telin 2.
-    *   Attempt console connection using the same server/cable but connect to the Nexus console port (likely also `/dev/ttyS0` if only one serial port is used, requires moving the cable). Use 9600 8N1 settings.
-    *   Attempt management port access (`mgmt0`): Connect laptop/server to the `mgmt0` port, configure an IP on the same subnet (if known), and try SSH/HTTPS. The `<network-range>` network could potentially be for these switches (See `private-network-details.md`).
-
-3.  **Network Clarification**:
-    *   Investigate the `<network-range>` network further. Try connecting to it again and scanning for devices (e.g., using `arp-scan` or `nmap` if possible from a connected machine) to see if the Nexus management IPs appear (See `private-network-details.md`).
-
-## Additional Notes
-- These are high-performance data center switches commonly used for top-of-rack deployment.
-- Support various Layer 2/3 protocols and virtualization features.
-- Can be used in a Virtual Port Channel (vPC) setup for redundancy.
-- The third switch at the top of the rack appears to be in active production use with multiple connected ports.
-
----
-
 ## Linux Server Connection (to Quanta Console)
 
 ### Server Configuration
-- **Hardware Connection**:
+- **Hardware Connection**: 
   - Linux server (`<server-hostname>`, see `private-network-details.md`) connected to the **Top Quanta LB6M** switch console port.
   - Using Cisco console cable (light-blue) with RJ45 connector to switch and DB9 connector to server's serial port (`/dev/ttyS0`).
 
@@ -254,7 +232,7 @@ These commands are relevant for the **Quanta LB6M** switch:
 
 ### Alternative Connection Methods
 - **If screen/minicom can't be installed**:
-  - Try direct TTY interaction: `sudo -S stty -F /dev/ttyS0 9600 cs8 -cstopb -parenb raw -echo; sudo cat /dev/ttyS0`
+  - Try direct TTY interaction: `sudo -S stty -F /dev/ttyS0 9600 cs8 -cstopb -parenb raw -echo; sudo cat /dev/ttyS0 > /dev/null`
   - Use basic utilities: `echo "show version" | sudo tee /dev/ttyS0 > /dev/null`
   - Script for interactive session:
     ```bash
@@ -270,21 +248,96 @@ These commands are relevant for the **Quanta LB6M** switch:
     stty -raw echo
     ```
 
-### Next Steps (Server & Switch Access)
-1.  **Configuration Priorities**:
-    *   Verify `<username>` is in `dialout` group on `<server-hostname>`.
-    *   Ensure `screen` or `minicom` is available/installed on `<server-hostname>`.
-    *   Use `screen` or `minicom` to access the **Quanta** switch console via `/dev/ttyS0`.
+---
 
-2.  **Initial Switch Discovery (Quanta Focus First)**:
-    *   Document Quanta's hostname (set one if missing) and IP configuration.
-    *   Map physical ports on the Quanta switch using `show lldp interface all` (for link status) and `show mac-addr-table`.
-    *   **Enable LLDP** and check neighbors (`show lldp remote-device all`) to confirm connections like `basefarm-6`.
+## Glossary of Terms
 
-3.  **Documentation Tasks**:
-    *   Record successful Quanta connection method and credentials securely (in `private-network-details.md` or password manager).
-    *   Save Quanta switch configuration using `write` after changes.
-    *   Plan separate documentation for Cisco Nexus switch access/findings.
+*   **ARP (Address Resolution Protocol):** A protocol used to map an IP address (Layer 3) to a physical MAC address (Layer 2) on a local network segment. The `show arp` command displays the switch's table of these mappings.
+*   **CLI (Command Line Interface):** A text-based interface used for interacting with the switch's operating system to execute commands and configure the device (e.g., via console, SSH, or Telnet).
+*   **DHCP (Dynamic Host Configuration Protocol):** A protocol used to automatically assign IP addresses and other network configuration parameters (like gateway, DNS servers) to devices on a network.
+*   **FASTPATH:** A networking software stack/SDK developed by Broadcom, often used as the basis for the operating system on switches from various manufacturers like Quanta, Edge-Core, Dell, etc.
+*   **FCoE (Fibre Channel over Ethernet):** A protocol that allows Fibre Channel (storage) traffic to be encapsulated and transported over Ethernet networks. Specific feature of the Cisco Nexus switches.
+*   **IP (Internet Protocol):** The main network layer protocol used for addressing devices and routing data across networks.
+*   **LACP (Link Aggregation Control Protocol):** A protocol used to dynamically bundle multiple physical network links together into a single logical link (a Port Channel or LAG) for increased bandwidth and redundancy.
+*   **LLDP (Link Layer Discovery Protocol):** A vendor-neutral protocol used by network devices to advertise their identity, capabilities, and neighbors on a local Ethernet network. Commands like `show lldp remote-device all` use this protocol to discover directly connected devices, but it needs to be enabled first.
+    *   **LLDP-MED (Media Endpoint Discovery):** An extension to LLDP specifically for voice/video devices (like IP phones) to provide additional configuration details (e.g., voice VLAN, QoS settings).
+*   **MAC Address (Media Access Control Address):** A unique hardware identifier assigned to a network interface card (NIC). Switches use MAC addresses to forward traffic at Layer 2. The `show mac-addr-table` command displays the switch's learned MAC addresses and associated ports.
+*   **NIC (Network Interface Card):** The hardware component that connects a computer or server to a network.
+*   **NX-OS (Nexus Operating System):** Cisco's operating system specifically designed for their Nexus line of data center switches (like the Telin 1 / Telin 2 devices).
+*   **QSFP+ (Quad Small Form-factor Pluggable Plus):** A type of compact, hot-pluggable transceiver used for high-speed data communications, typically 40 Gigabit Ethernet (can often be broken out into 4x10GbE).
+*   **SFP (Small Form-factor Pluggable) / SFP+ (Enhanced SFP):** Compact, hot-pluggable transceivers used for data communications. SFP typically supports 1 Gigabit Ethernet or Fibre Channel, while SFP+ supports 10 Gigabit Ethernet. The Quanta and Nexus switches use these for their fiber or copper ports.
+*   **SSH (Secure Shell):** A cryptographic network protocol for operating network services securely over an unsecured network. Commonly used for secure remote CLI access.
+*   **Tx/Rx:** Abbreviations for Transmit (sending data) and Receive (receiving data), often seen in interface statistics.
+*   **VLAN (Virtual Local Area Network):** A method for logically segmenting a physical network into multiple broadcast domains. Devices within the same VLAN can communicate directly at Layer 2, while communication between VLANs requires a Layer 3 router.
+*   **vPC (virtual PortChannel):** A Cisco Nexus feature allowing two separate Nexus switches to appear as a single logical switch to a downstream device connected via a Port Channel. Provides device-level redundancy.
 
-## Credits
+---
+
+## Next Steps
+
+This section outlines the planned actions for further investigation and configuration.
+
+### Quanta Switch (Top) Investigation
+1.  **Reconnect:** Establish console connection via `/dev/ttyS0` on `<server-hostname>` (9600 8N1).
+2.  **Enable LLDP:** Configure the switch to enable LLDP globally and on relevant interfaces (especially the UP ports `0/16`, `0/22`, `0/23`) to discover neighbors.
+    ```bash
+    # Example Configuration Commands:
+    configure
+    lldp run
+    interface 0/16
+    lldp transmit
+    lldp receive
+    exit
+    interface 0/22
+    lldp transmit
+    lldp receive
+    exit
+    interface 0/23
+    lldp transmit
+    lldp receive
+    exit
+    # Add other interfaces if necessary
+    exit
+    write 
+    ```
+3.  **Identify Neighbors:** After enabling LLDP, wait ~60 seconds and run `show lldp remote-device all` to identify connected devices (e.g., confirm connection to `basefarm-6` and identify devices on other UP ports).
+4.  **Gather Interface Details:** Run `show interface ethernet <slot/port>` for the UP interfaces (`0/16`, `0/22`, `0/23`) to check detailed statistics, speed, duplex, and potential errors.
+5.  **Check System Status:** Execute `show logging`, `show eventlog`, and `show environment` to check for system events, errors, or hardware issues.
+6.  **Set Hostname:** If not already done, configure a descriptive hostname (e.g., `Quanta-Top-SW1`).
+    ```bash
+    configure
+    hostname Quanta-Top-SW1 
+    exit
+    write
+    ```
+7.  **Verify IP Connectivity:** Investigate the configured IP on interface `0/24`. If the interface can be brought UP, test if the switch is reachable via this IP. Check the role of the `158.39.93.49/50` network.
+8.  **Check Remote Access:** Examine the running configuration (`show running-config`) for `ssh` or `telnet` settings (`show network` might also be relevant).
+
+### Cisco Nexus Switches ("Telin 1" / "Telin 2") Investigation
+1.  **Identify Ports:** Locate the Console and `mgmt0` ports on both Nexus switches.
+2.  **Attempt Console Access:** Move the console cable from the Quanta switch to one of the Nexus switches and attempt connection via `/dev/ttyS0` (9600 8N1). Use standard NX-OS commands (e.g., `show version`, `show running-config`).
+3.  **Attempt Management Access:** Connect a laptop or the server to the `mgmt0` port of a Nexus switch. If the management network (`<network-range>`, see `private-network-details.md`) is known or suspected, configure a static IP on the laptop/server in that subnet and attempt SSH/HTTPS access to the Nexus default IPs or IPs found via scanning.
+
+### Network Clarification (Management Network)
+1.  **Investigate `<network-range>`:** Connect a device to the network segment where the DHCP address `<dhcp-ip-address>` was received.
+2.  **Scan for Devices:** If possible, use tools like `arp-scan` or `nmap` from the connected device to identify active hosts on this network, potentially revealing the Nexus management IPs.
+
+### Server (`basefarm-6`) Preparation
+1.  **Verify Console Access Tools:** Ensure `screen` or `minicom` is installed and functional on `<server-hostname>`.
+2.  **Confirm Permissions:** Double-check that the user account used for console access (`<username>`) is part of the `dialout` group.
+
+### Documentation
+1.  **Update `private-network-details.md`:** Record all new findings, including LLDP neighbor details, confirmed interface connections, management IPs discovered, and any credentials obtained.
+2.  **Update `README.md`:** Refine command lists, observations, and next steps based on progress.
+3.  **Save Configurations:** After making changes (like enabling LLDP or setting hostname), ensure configurations are saved on the switches (`write` on Quanta, `copy running-config startup-config` on Nexus).
+
+## Additional Notes
+- These are high-performance data center switches commonly used for top-of-rack deployment.
+- Support various Layer 2/3 protocols and virtualization features.
+- Can be used in a Virtual Port Channel (vPC) setup for redundancy.
+- The third switch at the top of the rack appears to be in active production use with multiple connected ports.
+
+---
+
+## Contact
 Documented by: Almaz @ UiT Narvik, 2025
